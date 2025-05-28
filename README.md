@@ -29,7 +29,7 @@ We propose **MultiTalk** , a novel framework for audio-driven multi-person conve
 
 ## 🔥 Latest News
 
-* May 26, 2025: 👋 We release the [project page](https://meigen-ai.github.io/multi-talk/) of **MultiTalk** 
+* May 29, 2025: 👋 We release the [project page](https://meigen-ai.github.io/multi-talk/) of **MultiTalk** 
 
 
 ## 📑 Todo List
