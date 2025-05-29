@@ -11,7 +11,7 @@
 
 
 <a href='https://meigen-ai.github.io/multi-talk/'><img src='https://img.shields.io/badge/Project-Page-green'></a>
-<a href='https://meigen-ai.github.io/multi-talk/'><img src='https://img.shields.io/badge/Technique-Report-red'></a>
+<a href='https://arxiv.org/abs/2505.22647'><img src='https://img.shields.io/badge/Technique-Report-red'></a>
 </div>
 
 > **TL; DR:**  MultiTalk is an audio-driven video generation model
@@ -29,11 +29,12 @@ We propose **MultiTalk** , a novel framework for audio-driven multi-person conve
 
 ## 🔥 Latest News
 
+* May 29, 2025: 👋 We release the [Technique-Report](https://arxiv.org/abs/2505.22647) of **MultiTalk** 
 * May 29, 2025: 👋 We release the [project page](https://meigen-ai.github.io/multi-talk/) of **MultiTalk** 
 
 
 ## 📑 Todo List
 
-- [ ] Release the technical report
+- [x] Release the technical report
 - [ ] Inference
 - [ ] Checkpoints
