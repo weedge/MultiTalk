@@ -20,18 +20,7 @@
   <img src="assets/pipe.png">
 </p>
 
-## Video Demos
 
-<table class="center">
-  <td><video src="https://meigen-ai.github.io/multi-talk/videos/realistic/004.mp4" width="320" controls loop autoplay muted></video></td>
-  <td><video src="https://meigen-ai.github.io/multi-talk/videos/realistic/001.mp4" width="320" controls loop autoplay muted></video></td>
-  <td><video src="https://meigen-ai.github.io/multi-talk/videos/cartoon/003.mp4" width="320" controls loop autoplay muted></video></td>
-  <tr>
-  <td><video src="https://meigen-ai.github.io/multi-talk/videos/cartoon/001.mp4" width="320" controls loop autoplay muted></video></td>
-  <td><video src="https://meigen-ai.github.io/multi-talk/videos/sing/008.mp4" width="320" controls loop autoplay muted></video></td>
-  <td><video src="https://meigen-ai.github.io/multi-talk/videos/sing/010.mp4" width="320" controls loop autoplay muted></video></td>
-  <tr>
-</table >
 
 
 
