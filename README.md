@@ -14,7 +14,7 @@
 <a href='https://arxiv.org/abs/2505.22647'><img src='https://img.shields.io/badge/Technique-Report-red'></a>
 </div>
 
-> **TL; DR:**  MultiTalk is an audio-driven video generation model
+> **TL; DR:**  MultiTalk is an audio-driven multi-person conversational video generation​​. It enables the video creation of multi-person conversation 💬, singing  🎤,  interaction control 👬, and cartoon 🙊.
 
 <p align="center">
   <img src="assets/pipe.png">
