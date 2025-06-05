@@ -50,7 +50,7 @@
           <video src="https://github.com/user-attachments/assets/342595ab-cf75-4872-8182-f20fe8c95611" width="320" controls loop></video>
       </td>
       <td>
-          <video src="https://github.com/user-attachments/assets/7c65b69e-4497-486b-9ccf-5f9cbbcfd945" height="150" controls loop></video>
+          <video src="https://github.com/user-attachments/assets/6476f9f0-35e0-4484-91a4-8aa646aa994a" width="320" controls loop></video>
       </td>
        <td>
           <video src="https://github.com/user-attachments/assets/d8fc8e94-0cba-4c25-9f3a-a8d7e0a785e1" width="320" controls loop></video>
