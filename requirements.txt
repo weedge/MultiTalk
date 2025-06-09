@@ -1,0 +1,16 @@
+pyloudnorm==0.1.1
+opencv-python==4.9.0.80
+diffusers==0.33.1
+transformers==4.41.0
+accelerate==1.7.0
+tqdm==4.66.4
+imageio==2.34.1
+imageio-ffmpeg==0.4.9
+easydict==1.13
+ftfy==6.2.0
+huggingface_hub==0.32.4
+attr
+misaki[en]
+misaki[zh]
+numpy==1.23.5
+xfuser==0.4.3.post3
