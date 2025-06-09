@@ -159,6 +159,11 @@ ln -s weights/MeiGen-MultiTalk/multitalk.safetensors weights/Wan2.1-I2V-14B-480P
 ### 🔑 Quick Inference
 
 Our model is compatible with both 480P and 720P resolutions. The current code only supports 480P inference. 720P inference requires multiple GPUs, and we will provide an update soon.
+> Some tips
+> - Lip synchronization accuracy:​​ Audio CFG works optimally between 3–5. Increase the audio CFG value for better synchronization.
+> - ​​Video clip length:​​ The model was trained on 81-frame videos at 25 FPS. For optimal prompt following performance, generate clips at 81 frames. Generating up to 201 frames is possible, though longer clips might reduce prompt-following performance.
+> - ​​Long video generation:​​ Audio CFG influences color tone consistency across segments. Set this value to 3 to alleviate tonal variations.
+
 
 #### 1. Single-Person
 
