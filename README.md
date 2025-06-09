@@ -173,7 +173,7 @@ Our model is compatible with both 480P and 720P resolutions. The current code on
 
 ```
 python generate_multitalk.py --ckpt_dir weights/Wan2.1-I2V-14B-480P \
-    --wav2vec_dir 'weights/chinese-wav2vec2-base' --input_json examples/single_example_1.json --sample_steps 40 --mode clip --save_file single_exp
+    --wav2vec_dir 'weights/chinese-wav2vec2-base' --input_json examples/single_example_1.json --sample_steps 40 --frame_num 81 --mode clip --save_file single_exp
 
 ```
 
@@ -191,7 +191,7 @@ python generate_multitalk.py --ckpt_dir weights/Wan2.1-I2V-14B-480P \
 
 ```
 python generate_multitalk.py --ckpt_dir weights/Wan2.1-I2V-14B-480P \
-    --wav2vec_dir 'weights/chinese-wav2vec2-base' --input_json examples/multitalk_example_1.json --sample_steps 40 --mode clip --save_file multi_exp
+    --wav2vec_dir 'weights/chinese-wav2vec2-base' --input_json examples/multitalk_example_1.json --sample_steps 40 --frame_num 81 --mode clip --save_file multi_exp
 ```
 
 ##### 2) Long video generation
