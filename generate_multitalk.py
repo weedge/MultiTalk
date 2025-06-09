@@ -62,7 +62,7 @@ def _parse_args():
     parser.add_argument(
         "--task",
         type=str,
-        default="multitask-14B",
+        default="multitalk-14B",
         choices=list(WAN_CONFIGS.keys()),
         help="The task to run.")
     parser.add_argument(
@@ -346,7 +346,7 @@ def generate(args):
         dist.broadcast_object_list(base_seed, src=0)
         args.base_seed = base_seed[0]
 
-    assert args.task == "multitask-14B", 'You should choose multitask in args.task.'
+    assert args.task == "multitalk-14B", 'You should choose multitask in args.task.'
     
 
     # TODO: add prompt refine
