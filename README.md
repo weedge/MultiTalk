@@ -1,4 +1,8 @@
 <div align="center">
+<p align="center">
+  <img src="assets/logo2.jpeg" alt="MultiTalk" width="240"/>
+</p>
+  
 <h1>Let Them Talk: Audio-Driven Multi-Person Conversational Video Generation</h1>
 
 
