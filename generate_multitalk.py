@@ -346,7 +346,7 @@ def generate(args):
         dist.broadcast_object_list(base_seed, src=0)
         args.base_seed = base_seed[0]
 
-    assert args.task == "multitalk-14B", 'You should choose multitask in args.task.'
+    assert args.task == "multitalk-14B", 'You should choose multitalk in args.task.'
     
 
     # TODO: add prompt refine
