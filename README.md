@@ -71,10 +71,10 @@
 
 We propose **MultiTalk** , a novel framework for audio-driven multi-person conversational video generation. Given a multi-stream audio input, a reference image and a prompt, MultiTalk generates a video containing interactions following the prompt, with consistent lip motions aligned with the audio.
 
-- **Bilingual Support**: Supports both Chinese and English inputs.
-- **Multi-Resolution**: Compatible with both 480p and 720p output resolutions.
-- **Long Video Generation**: Provides good performance for videos up to 15 seconds.
-- **Instruction-Based Control**: Allows character and scene interactions to be controlled via natural language instructions.
+> - 💬 **​​Realistic Conversations**​​ - Supports single & multi-person generation
+> - 👥 ​​**​​Interactive Character Control**​​​​ - Direct virtual humans via prompts
+> - 🎤 ​​**​​Generalization Performances**​​​​ - Supports the generation of cartoon character and singing 
+> - 📺 **​​​​Resolution Flexibility​​**​​: 480p & 720p output at arbitrary aspect ratios
 
 ## 🔥 Latest News
 
