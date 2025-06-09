@@ -165,6 +165,7 @@ Our model is compatible with both 480P and 720P resolutions. The current code on
 > - Lip synchronization accuracy:​​ Audio CFG works optimally between 3–5. Increase the audio CFG value for better synchronization.
 > - ​​Video clip length:​​ The model was trained on 81-frame videos at 25 FPS. For optimal prompt following performance, generate clips at 81 frames. Generating up to 201 frames is possible, though longer clips might reduce prompt-following performance.
 > - ​​Long video generation:​​ Audio CFG influences color tone consistency across segments. Set this value to 3 to alleviate tonal variations.
+> - Sampling steps: If you want to generate video faster, you can decrease the sampling step to even 10 that will not hurt the lip synchronization accuracy, but affects the motion quality. More sampling steps, better visual quality. 
 
 
 #### 1. Single-Person
