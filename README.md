@@ -71,10 +71,11 @@
 
 We propose **MultiTalk** , a novel framework for audio-driven multi-person conversational video generation. Given a multi-stream audio input, a reference image and a prompt, MultiTalk generates a video containing interactions following the prompt, with consistent lip motions aligned with the audio.
 
-> - 💬 **​​Realistic Conversations**​​ - Supports single & multi-person generation
+> - 💬 **​​Realistic Conversations**​​ - Support single & multi-person generation
 > - 👥 ​​**​​Interactive Character Control**​​​​ - Direct virtual humans via prompts
-> - 🎤 ​​**​​Generalization Performances**​​​​ - Supports the generation of cartoon character and singing 
+> - 🎤 ​​**​​Generalization Performances**​​​​ - Support the generation of cartoon character and singing 
 > - 📺 **​​​​Resolution Flexibility​​**​​: 480p & 720p output at arbitrary aspect ratios
+> - ⏱️ **Long Video Generation**: Support video generation up to 15 seconds
 
 ## 🔥 Latest News
 
@@ -201,7 +202,7 @@ python generate_multitalk.py --ckpt_dir weights/Wan2.1-I2V-14B-480P \
 ```
 
 
-### 📚 Citation
+## 📚 Citation
 
 If you find our work useful in your research, please consider citing:
 
@@ -213,4 +214,10 @@ If you find our work useful in your research, please consider citing:
   year={2025}
 }
 ```
+
+## 📜 License
+The models in this repository are licensed under the Apache 2.0 License. We claim no rights over the your generated contents, 
+granting you the freedom to use them while ensuring that your usage complies with the provisions of this license. 
+You are fully accountable for your use of the models, which must not involve sharing any content that violates applicable laws, 
+causes harm to individuals or groups, disseminates personal information intended for harm, spreads misinformation, or targets vulnerable populations. 
 
