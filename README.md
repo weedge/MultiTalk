@@ -12,6 +12,7 @@
 
 <a href='https://meigen-ai.github.io/multi-talk/'><img src='https://img.shields.io/badge/Project-Page-green'></a>
 <a href='https://arxiv.org/abs/2505.22647'><img src='https://img.shields.io/badge/Technique-Report-red'></a>
+<a href='https://huggingface.co/MeiGen-AI/MeiGen-MultiTalk'><img src='https://img.shields.io/badge/%F0%9F%A4%97%20Hugging%20Face-Model-blue'></a>
 </div>
 
 > **TL; DR:**  MultiTalk is an audio-driven multi-person conversational video generation​​. It enables the video creation of multi-person conversation 💬, singing  🎤,  interaction control 👬, and cartoon 🙊.
@@ -78,3 +79,19 @@ We propose **MultiTalk** , a novel framework for audio-driven multi-person conve
 - [x] Release the technical report
 - [ ] Inference
 - [ ] Checkpoints
+
+
+
+## ✍️ Citation
+
+```bibtex
+@article{kong2025let,
+  title={Let Them Talk: Audio-Driven Multi-Person Conversational Video Generation},
+  author={Kong, Zhe and Gao, Feng and Zhang, Yong and Kang, Zhuoliang and Wei, Xiaoming and Cai, Xunliang and Chen, Guanying and Luo, Wenhan},
+  journal={arXiv preprint arXiv:2505.22647},
+  year={2025}
+}
+```
+
+## 📜 License
+MeiGen-MultiTalk is licensed under the Apache 2.0.
