@@ -26,7 +26,7 @@ WAN_CONFIGS = {
     'flf2v-14B': flf2v_14B,
     'vace-1.3B': t2v_1_3B,
     'vace-14B': t2v_14B,
-    'multitask-14B': multitalk_14B,
+    'multitalk-14B': multitalk_14B,
 }
 
 SIZE_CONFIGS = {
@@ -54,5 +54,5 @@ SUPPORTED_SIZES = {
     't2i-14B': tuple(SIZE_CONFIGS.keys()),
     'vace-1.3B': ('480*832', '832*480'),
     'vace-14B': ('720*1280', '1280*720', '480*832', '832*480'),
-    'multitask-14B': ('multitalk-480', 'multitalk-720'),
+    'multitalk-14B': ('multitalk-480', 'multitalk-720'),
 }
