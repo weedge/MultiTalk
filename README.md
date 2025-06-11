@@ -154,8 +154,8 @@ huggingface-cli download MeiGen-AI/MeiGen-MultiTalk --local-dir ./weights/MeiGen
 #### 2. Link MultiTalk Model to Wan2.1-I2V-14B-480P Directory
 ```
 mv weights/Wan2.1-I2V-14B-480P/diffusion_pytorch_model.safetensors.index.json weights/Wan2.1-I2V-14B-480P/diffusion_pytorch_model.safetensors.index.json_old
-sudo ln -s `{Absolute path}`/weights/MeiGen-MultiTalk/diffusion_pytorch_model.safetensors.index.json weights/Wan2.1-I2V-14B-480P/
-sudo ln -s `{Absolute path}`/weights/MeiGen-MultiTalk/multitalk.safetensors weights/Wan2.1-I2V-14B-480P/
+sudo ln -s {Absolute path}/weights/MeiGen-MultiTalk/diffusion_pytorch_model.safetensors.index.json weights/Wan2.1-I2V-14B-480P/
+sudo ln -s {Absolute path}/weights/MeiGen-MultiTalk/multitalk.safetensors weights/Wan2.1-I2V-14B-480P/
 ```
 
 ### 🔑 Quick Inference
