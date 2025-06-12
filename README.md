@@ -93,6 +93,7 @@ We propose **MultiTalk** , a novel framework for audio-driven multi-person conve
 - [ ] Multi-GPU Inference
 - [ ] Gradio demo
 - [ ] Inference acceleration
+- [ ] Run with very low VRAM
 - [ ] ComfyUI
 
 ## Quick Start
