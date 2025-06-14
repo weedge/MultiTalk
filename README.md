@@ -174,7 +174,8 @@ Our model is compatible with both 480P and 720P resolutions. The current code on
 > - Lip synchronization accuracy:​​ Audio CFG works optimally between 3–5. Increase the audio CFG value for better synchronization.
 > - ​​Video clip length:​​ The model was trained on 81-frame videos at 25 FPS. For optimal prompt following performance, generate clips at 81 frames. Generating up to 201 frames is possible, though longer clips might reduce prompt-following performance.
 > - ​​Long video generation:​​ Audio CFG influences color tone consistency across segments. Set this value to 3 to alleviate tonal variations.
-> - Sampling steps: If you want to generate a video fast, you can decrease the sampling steps to even 10 that will not hurt the lip synchronization accuracy, but affects the motion and visual quality. More sampling steps, better video quality. 
+> - Sampling steps: If you want to generate a video fast, you can decrease the sampling steps to even 10 that will not hurt the lip synchronization accuracy, but affects the motion and visual quality. More sampling steps, better video quality.
+> - TeaCache accelerate:​​ The optimal range for `--teacache_thresh` is between 0.2 and 0.5. Increasing this value can further improve acceleration, but may also lead to a decline in the quality of the generated video.
 
 #### Usage of MultiTalk
 ```
@@ -184,6 +185,7 @@ Our model is compatible with both 480P and 720P resolutions. The current code on
 --size multitalk-480: generate 480P video.
 --size multitalk-720: generate 720P video.
 --use_apg: run with APG.
+--teacache_thresh: A coefficient used for TeaCache acceleration
 ```
 
 #### 1. Single-Person
