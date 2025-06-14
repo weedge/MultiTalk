@@ -80,6 +80,7 @@ We propose **MultiTalk** , a novel framework for audio-driven multi-person conve
 
 ## 🔥 Latest News
 
+* June 14, 2025: 🔥🔥 We release `MultiTalk` with support for `multi-GPU inference`, `teacache acceleration`, `APG` and `low-VRAM inference` (enabling 480P video generation on a single RTX 4090). [APG](https://arxiv.org/abs/2410.02416) is used to alleviate the color error accumulation in long video generation. TeaCache is capable of increasing speed by approximately 2~3x.
 * June 9, 2025: 🔥🔥 We release the [weights](https://huggingface.co/MeiGen-AI/MeiGen-MultiTalk) and inference code of **MultiTalk** 
 * May 29, 2025: We release the [Technique-Report](https://arxiv.org/abs/2505.22647) of **MultiTalk** 
 * May 29, 2025: We release the [project page](https://meigen-ai.github.io/multi-talk/) of **MultiTalk** 
@@ -89,11 +90,11 @@ We propose **MultiTalk** , a novel framework for audio-driven multi-person conve
 - [x] Release the technical report
 - [x] Inference
 - [x] Checkpoints
+- [x] Multi-GPU Inference
+- [x] Inference acceleration
+- [x] Run with very low VRAM
 - [ ] TTS integration
-- [ ] Multi-GPU Inference
 - [ ] Gradio demo
-- [ ] Inference acceleration
-- [ ] Run with very low VRAM
 - [ ] ComfyUI
 
 ## Quick Start
@@ -104,29 +105,24 @@ We propose **MultiTalk** , a novel framework for audio-driven multi-person conve
 ```
 conda create -n multitalk python=3.10
 conda activate multitalk
-pip install torch==2.2.2 torchvision==0.17.2 torchaudio==2.2.2 --index-url https://download.pytorch.org/whl/cu121
-pip install -U xformers==0.0.25.post1 --index-url https://download.pytorch.org/whl/cu121
+pip install torch==2.4.1 torchvision==0.19.1 torchaudio==2.4.1 --index-url https://download.pytorch.org/whl/cu121
+pip install -U xformers==0.0.28 --index-url https://download.pytorch.org/whl/cu121
 ```
 #### 2. Flash-attn installation:
 ```
-pip install packaging
-pip install ninja
-pip install psutil==7.0.0
-pip install flash-attn==2.5.6 --no-build-isolation
-```
-or
-```
-wget https://github.com/Dao-AILab/flash-attention/releases/download/v2.5.6/flash_attn-2.5.6+cu122torch2.2cxx11abiFALSE-cp310-cp310-linux_x86_64.whl
-python -m pip install flash_attn-2.5.6+cu122torch2.2cxx11abiFALSE-cp310-cp310-linux_x86_64.whl
+pip install ninja 
+pip install psutil 
+pip install packaging 
+pip install flash_attn
 ```
 
-#### 2. Other dependencies
+#### 3. Other dependencies
 ```
-conda install -c conda-forge librosa
 pip install -r requirements.txt
+conda install -c conda-forge librosa
 ```
 
-#### 3. FFmeg installation
+#### 4. FFmeg installation
 ```
 conda install -c conda-forge ffmpeg
 ```
@@ -176,41 +172,121 @@ Our model is compatible with both 480P and 720P resolutions. The current code on
 > - ​​Long video generation:​​ Audio CFG influences color tone consistency across segments. Set this value to 3 to alleviate tonal variations.
 > - Sampling steps: If you want to generate a video fast, you can decrease the sampling steps to even 10 that will not hurt the lip synchronization accuracy, but affects the motion and visual quality. More sampling steps, better video quality. 
 
+#### Usage of MultiTalk
+```
+--mode streaming: long video generation.
+--mode clip: generate short video with one chunk. 
+--use_teacache: run with TeaCache.
+--size multitalk-480: generate 480P video.
+--size multitalk-720: generate 720P video.
+--use_apg: run with APG.
+```
 
 #### 1. Single-Person
 
-##### 1) Generate a short video with one chunk
+##### 1) Run with single GPU
+
 
 ```
-python generate_multitalk.py --ckpt_dir weights/Wan2.1-I2V-14B-480P \
-    --wav2vec_dir 'weights/chinese-wav2vec2-base' --input_json examples/single_example_1.json --sample_steps 40 --frame_num 81 --mode clip --save_file single_exp
+python generate_multitalk.py \
+    --ckpt_dir weights/Wan2.1-I2V-14B-480P \
+    --wav2vec_dir 'weights/chinese-wav2vec2-base' \
+    --input_json examples/single_example_1.json \
+    --sample_steps 40 \
+    --mode streaming \
+    --use_teacache \
+    --save_file single_long_exp
 
 ```
 
-##### 2) Long video generation
+##### 2) Run with very low VRAM
+
+If you want run with very low VRAM, set `--num_persistent_param_in_dit 0`:
+
 
 ```
-python generate_multitalk.py --ckpt_dir weights/Wan2.1-I2V-14B-480P \
-    --wav2vec_dir 'weights/chinese-wav2vec2-base' --input_json examples/single_example_1.json --sample_steps 40 --mode streaming --save_file single_long_exp
+python generate_multitalk.py \
+    --ckpt_dir weights/Wan2.1-I2V-14B-480P \
+    --wav2vec_dir 'weights/chinese-wav2vec2-base' \
+    --input_json examples/single_example_1.json \
+    --sample_steps 40 \
+    --mode streaming \
+    --num_persistent_param_in_dit 0 \
+    --use_teacache \
+    --save_file single_long_lowvram_exp
 
 ```
+
+##### 3) Multi-GPU inference
+
+```
+GPU_NUM=8
+torchrun --nproc_per_node=$GPU_NUM --standalone generate_multitalk.py \
+    --ckpt_dir weights/Wan2.1-I2V-14B-480P \
+    --wav2vec_dir 'weights/chinese-wav2vec2-base' \
+    --dit_fsdp --t5_fsdp \
+    --ulysses_size=$GPU_NUM \
+    --input_json examples/single_example_1.json \
+    --sample_steps 40 \
+    --mode streaming \
+    --use_teacache \
+    --save_file single_long_multigpu_exp
+
+```
+
+
 
 #### 2. Multi-Person
 
-###### 1) Generate a short video with one chunk
+##### 1) Run with single GPU
 
 ```
-python generate_multitalk.py --ckpt_dir weights/Wan2.1-I2V-14B-480P \
-    --wav2vec_dir 'weights/chinese-wav2vec2-base' --input_json examples/multitalk_example_1.json --sample_steps 40 --frame_num 81 --mode clip --save_file multi_exp
+python generate_multitalk.py \
+    --ckpt_dir weights/Wan2.1-I2V-14B-480P \
+    --wav2vec_dir 'weights/chinese-wav2vec2-base' \
+    --input_json examples/multitalk_example_2.json \
+    --sample_steps 40 \
+    --mode streaming \
+    --use_teacache \
+    --save_file multi_long_exp
+```
+##### 2) Run with very low VRAM
+
+
+```
+python generate_multitalk.py \
+    --ckpt_dir weights/Wan2.1-I2V-14B-480P \
+    --wav2vec_dir 'weights/chinese-wav2vec2-base' \
+    --input_json examples/multitalk_example_2.json \
+    --sample_steps 40 \
+    --mode streaming \
+    --num_persistent_param_in_dit 0 \
+    --use_teacache \
+    --save_file multi_long_lowvram_exp
+
 ```
 
-##### 2) Long video generation
+##### 3) Multi-GPU inference
 
 ```
-python generate_multitalk.py --ckpt_dir weights/Wan2.1-I2V-14B-480P \
-    --wav2vec_dir 'weights/chinese-wav2vec2-base' --input_json examples/multitalk_example_2.json --sample_steps 40 --mode streaming --save_file multi_long_exp
+GPU_NUM=8
+torchrun --nproc_per_node=$GPU_NUM --standalone generate_multitalk.py \
+    --ckpt_dir weights/Wan2.1-I2V-14B-480P \
+    --wav2vec_dir 'weights/chinese-wav2vec2-base' \
+    --dit_fsdp --t5_fsdp --ulysses_size=$GPU_NUM \
+    --input_json examples/multitalk_example_2.json \
+    --sample_steps 40 \
+    --mode streaming --use_teacache \
+    --save_file multi_long_multigpu_exp
 
 ```
+
+## 🚀Computational Efficiency
+The results are evaluated on A100 GPUs for multi-person generation. Single-person generation uses less memory and provides faster inference.
+<p align="center">
+  <img src="assets/efficiency.png">
+</p>
+TeaCache is capable of increasing speed by approximately 2~3x.
 
 
 ## 📚 Citation
