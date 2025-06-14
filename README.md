@@ -91,7 +91,11 @@ We propose **MultiTalk** , a novel framework for audio-driven multi-person conve
 - [x] Inference
 - [x] Checkpoints
 - [x] Multi-GPU Inference
-- [x] Inference acceleration
+- [ ] Inference acceleration
+  - [x] TeaCache
+  - [ ] int8 quantization
+  - [ ] LCM distillation
+  - [ ] Sparse Attention
 - [x] Run with very low VRAM
 - [ ] TTS integration
 - [ ] Gradio demo
