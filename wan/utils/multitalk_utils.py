@@ -17,6 +17,9 @@ from tqdm import tqdm
 import numpy as np
 import subprocess
 import soundfile as sf
+import torchvision
+import binascii
+import os.path as osp
 
 
 VID_EXTENSIONS = (".mp4", ".avi", ".mov", ".mkv")
@@ -188,7 +191,50 @@ class RotaryPositionalEmbedding1D(nn.Module):
         return x_.type_as(x)
     
 
-def save_video_ffmpeg(gen_video_samples, save_path, vocal_audio_list, fps=25, quality=5):
+
+def rand_name(length=8, suffix=''):
+    name = binascii.b2a_hex(os.urandom(length)).decode('utf-8')
+    if suffix:
+        if not suffix.startswith('.'):
+            suffix = '.' + suffix
+        name += suffix
+    return name
+
+def cache_video(tensor,
+                save_file=None,
+                fps=30,
+                suffix='.mp4',
+                nrow=8,
+                normalize=True,
+                value_range=(-1, 1),
+                retry=5):
+    
+    # cache file
+    cache_file = osp.join('/tmp', rand_name(
+        suffix=suffix)) if save_file is None else save_file
+
+    # save to cache
+    error = None
+    for _ in range(retry):
+       
+        # preprocess
+        tensor = tensor.clamp(min(value_range), max(value_range))
+        tensor = torch.stack([
+                torchvision.utils.make_grid(
+                    u, nrow=nrow, normalize=normalize, value_range=value_range)
+                for u in tensor.unbind(2)
+            ],
+                                 dim=1).permute(1, 2, 3, 0)
+        tensor = (tensor * 255).type(torch.uint8).cpu()
+
+        # write video
+        writer = imageio.get_writer(cache_file, fps=fps, codec='libx264', quality=10, ffmpeg_params=["-crf", "10"])
+        for frame in tensor.numpy():
+            writer.append_data(frame)
+        writer.close()
+        return cache_file
+
+def save_video_ffmpeg(gen_video_samples, save_path, vocal_audio_list, fps=25, quality=5, high_quality_save=False):
     
     def save_video(frames, save_path, fps, quality=9, ffmpeg_params=None):
         writer = imageio.get_writer(
@@ -200,10 +246,20 @@ def save_video_ffmpeg(gen_video_samples, save_path, vocal_audio_list, fps=25, qu
         writer.close()
     save_path_tmp = save_path + "-temp.mp4"
 
-    video_audio = (gen_video_samples+1)/2 # C T H W
-    video_audio = video_audio.permute(1, 2, 3, 0).cpu().numpy()
-    video_audio = np.clip(video_audio * 255, 0, 255).astype(np.uint8) 
-    save_video(video_audio, save_path_tmp, fps=fps, quality=quality)
+    if high_quality_save:
+        cache_video(
+                    tensor=gen_video_samples.unsqueeze(0),
+                    save_file=save_path_tmp,
+                    fps=fps,
+                    nrow=1,
+                    normalize=True,
+                    value_range=(-1, 1)
+                    )
+    else:
+        video_audio = (gen_video_samples+1)/2 # C T H W
+        video_audio = video_audio.permute(1, 2, 3, 0).cpu().numpy()
+        video_audio = np.clip(video_audio * 255, 0, 255).astype(np.uint8)  # to [0, 255]
+        save_video(video_audio, save_path_tmp, fps=fps, quality=quality)
 
 
     # crop audio according to video length
@@ -220,27 +276,41 @@ def save_video_ffmpeg(gen_video_samples, save_path, vocal_audio_list, fps=25, qu
     ]
     subprocess.run(final_command, check=True)
 
-
-    # generate video with audio
     save_path = save_path + ".mp4"
-    final_command = [
-        "ffmpeg",
-        "-y",
-        "-i",
-        save_path_tmp,
-        "-i",
-        save_path_crop_audio,
-        "-c:v",
-        "libx264",
-        "-c:a",
-        "aac",
-        "-shortest",
-        save_path,
-    ]
-    subprocess.run(final_command, check=True)
-    os.remove(save_path_tmp)
-    os.remove(save_path_crop_audio)
-
+    if high_quality_save:
+        final_command = [
+            "ffmpeg",
+            "-y",
+            "-i", save_path_tmp,
+            "-i", save_path_crop_audio,
+            "-c:v", "libx264",
+            "-crf", "0",
+            "-preset", "veryslow",
+            "-c:a", "aac", 
+            "-shortest",
+            save_path,
+        ]
+        subprocess.run(final_command, check=True)
+        os.remove(save_path_tmp)
+        os.remove(save_path_crop_audio)
+    else:
+        final_command = [
+            "ffmpeg",
+            "-y",
+            "-i",
+            save_path_tmp,
+            "-i",
+            save_path_crop_audio,
+            "-c:v",
+            "libx264",
+            "-c:a",
+            "aac",
+            "-shortest",
+            save_path,
+        ]
+        subprocess.run(final_command, check=True)
+        os.remove(save_path_tmp)
+        os.remove(save_path_crop_audio)
 
 
 class MomentumBuffer:

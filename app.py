@@ -2,11 +2,13 @@
 import argparse
 import logging
 import os
+os.environ["no_proxy"] = "localhost,127.0.0.1,::1"
 import sys
 import json
 import warnings
 from datetime import datetime
 
+import gradio as gr
 warnings.filterwarnings('ignore')
 
 import random
@@ -30,7 +32,6 @@ import numpy as np
 from einops import rearrange
 import soundfile as sf
 import re
-
 
 def _validate_args(args):
     # Basic check
@@ -83,20 +84,19 @@ def _parse_args():
     parser.add_argument(
         "--ckpt_dir",
         type=str,
-        default=None,
+        default='./weights/Wan2.1-I2V-14B-480P',
         help="The path to the Wan checkpoint directory.")
     parser.add_argument(
         "--wav2vec_dir",
         type=str,
-        default=None,
+        default='./weights/chinese-wav2vec2-base',
         help="The path to the wav2vec checkpoint directory.")
     parser.add_argument(
         "--lora_dir",
         type=str,
         nargs='+',
         default=None,
-        help="The paths to the LoRA checkpoint files."
-    )
+        help="The path to the LoRA checkpoint directory.")
     parser.add_argument(
         "--lora_scale",
         type=float,
@@ -104,6 +104,18 @@ def _parse_args():
         default=[1.2],
         help="Controls how much to influence the outputs with the LoRA parameters. Accepts multiple float values."
     )
+
+
+    # parser.add_argument(
+    #     "--lora_dir",
+    #     type=str,
+    #     default=None,
+    #     help="The path to the LoRA checkpoint directory.")
+    # parser.add_argument(
+    #     "--lora_scale",
+    #     type=float,
+    #     default=1.2,
+    #     help="Controls how much to influence the outputs with the LoRA parameters.")
     parser.add_argument(
         "--offload_model",
         type=str2bool,
@@ -143,7 +155,7 @@ def _parse_args():
     parser.add_argument(
         "--audio_save_dir",
         type=str,
-        default='save_audio',
+        default='save_audio/gradio',
         help="The path to save the audio embedding.")
     parser.add_argument(
         "--base_seed",
@@ -163,7 +175,7 @@ def _parse_args():
     parser.add_argument(
         "--mode",
         type=str,
-        default="clip",
+        default="streaming",
         choices=['clip', 'streaming'],
         help="clip: generate one video chunk, streaming: long video generation")
     parser.add_argument(
@@ -190,12 +202,6 @@ def _parse_args():
         required=False,
         help="Maximum parameter quantity retained in video memory, small number to reduce VRAM required",
     )
-    parser.add_argument(
-        "--audio_mode",
-        type=str,
-        default="localfile",
-        choices=['localfile', 'tts'],
-        help="localfile: audio from local wav file, tts: audio from TTS")
     parser.add_argument(
         "--use_teacache",
         action="store_true",
@@ -226,13 +232,10 @@ def _parse_args():
         default=55,
         help="Norm threshold used in adaptive projected guidance (APG)."
     )
-
-    
     args = parser.parse_args()
-
     _validate_args(args)
-
     return args
+
 
 def custom_init(device, wav2vec):    
     audio_encoder = Wav2Vec2Model.from_pretrained(wav2vec, local_files_only=True).to(device)
@@ -249,7 +252,6 @@ def loudness_norm(audio_array, sr=16000, lufs=-23):
     return normalized_audio
 
 def audio_prepare_multi(left_path, right_path, audio_type, sample_rate=16000):
-
     if not (left_path=='None' or right_path=='None'):
         human_speech_array1 = audio_prepare_single(left_path)
         human_speech_array2 = audio_prepare_single(right_path)
@@ -410,7 +412,7 @@ def process_tts_multi(text, save_dir, voice1, voice2):
     # sum, _ = librosa.load(save_path_sum, sr=16000)
     return s1, s2, save_path_sum
 
-def generate(args):
+def run_graio_demo(args):
     rank = int(os.getenv("RANK", 0))
     world_size = int(os.getenv("WORLD_SIZE", 1))
     local_rank = int(os.getenv("LOCAL_RANK", 0))
@@ -451,21 +453,7 @@ def generate(args):
             ulysses_degree=args.ulysses_size,
         )
 
-    # TODO: use prompt refine
-    # if args.use_prompt_extend:
-    #     if args.prompt_extend_method == "dashscope":
-    #         prompt_expander = DashScopePromptExpander(
-    #             model_name=args.prompt_extend_model,
-    #             is_vl="i2v" in args.task or "flf2v" in args.task)
-    #     elif args.prompt_extend_method == "local_qwen":
-    #         prompt_expander = QwenPromptExpander(
-    #             model_name=args.prompt_extend_model,
-    #             is_vl="i2v" in args.task,
-    #             device=rank)
-    #     else:
-    #         raise NotImplementedError(
-    #             f"Unsupport prompt_extend_method: {args.prompt_extend_method}")
-
+   
     cfg = WAN_CONFIGS[args.task]
     if args.ulysses_size > 1:
         assert cfg.num_heads % args.ulysses_size == 0, f"`{cfg.num_heads=}` cannot be divided evenly by `{args.ulysses_size=}`."
@@ -481,43 +469,65 @@ def generate(args):
     assert args.task == "multitalk-14B", 'You should choose multitalk in args.task.'
     
 
-    # TODO: add prompt refine
-    # img = Image.open(args.image).convert("RGB")
-    # if args.use_prompt_extend:
-    #     logging.info("Extending prompt ...")
-    #     if rank == 0:
-    #         prompt_output = prompt_expander(
-    #             args.prompt,
-    #             tar_lang=args.prompt_extend_target_lang,
-    #             image=img,
-    #             seed=args.base_seed)
-    #         if prompt_output.status == False:
-    #             logging.info(
-    #                 f"Extending prompt failed: {prompt_output.message}")
-    #             logging.info("Falling back to original prompt.")
-    #             input_prompt = args.prompt
-    #         else:
-    #             input_prompt = prompt_output.prompt
-    #         input_prompt = [input_prompt]
-    #     else:
-    #         input_prompt = [None]
-    #     if dist.is_initialized():
-    #         dist.broadcast_object_list(input_prompt, src=0)
-    #     args.prompt = input_prompt[0]
-    #     logging.info(f"Extended prompt: {args.prompt}")
+    
+    wav2vec_feature_extractor, audio_encoder= custom_init('cpu', args.wav2vec_dir)
+    os.makedirs(args.audio_save_dir,exist_ok=True)
 
-    # read input files
+
+    logging.info("Creating MultiTalk pipeline.")
+    # wan_i2v = None
+    wan_i2v = wan.MultiTalkPipeline(
+        config=cfg,
+        checkpoint_dir=args.ckpt_dir,
+        device_id=device,
+        rank=rank,
+        t5_fsdp=args.t5_fsdp,
+        dit_fsdp=args.dit_fsdp, 
+        use_usp=(args.ulysses_size > 1 or args.ring_size > 1),  
+        t5_cpu=args.t5_cpu,
+        lora_dir=args.lora_dir,
+        lora_scales=args.lora_scale
+    )
+
+    if args.num_persistent_param_in_dit is not None:
+        wan_i2v.vram_management = True
+        wan_i2v.enable_vram_management(
+            num_persistent_param_in_dit=args.num_persistent_param_in_dit
+        )
+
 
     
+    def generate_video(img2vid_image, img2vid_prompt, n_prompt, img2vid_audio_1, img2vid_audio_2,
+                    sd_steps, seed, text_guide_scale, audio_guide_scale, mode_selector, tts_text, resolution_select):
+        input_data = {}
+        input_data["prompt"] = img2vid_prompt
+        input_data["cond_image"] = img2vid_image
+        person = {}
+        if mode_selector == "Single Person(Local File)":
+            person['person1'] = img2vid_audio_1
+        elif mode_selector == "Single Person(TTS)":
+            tts_audio = {}
+            tts_audio['text'] = tts_text
+            tts_audio['human1_voice'] = "weights/Kokoro-82M/voices/af_heart.pt"
+            input_data["tts_audio"] = tts_audio
+        elif mode_selector == "Multi Person(Local File, audio add)":
+            person['person1'] = img2vid_audio_1
+            person['person2'] = img2vid_audio_2
+            input_data["audio_type"] = 'add'
+        elif mode_selector == "Multi Person(Local File, audio parallel)":
+            person['person1'] = img2vid_audio_1
+            person['person2'] = img2vid_audio_2
+            input_data["audio_type"] = 'para'
+        else:
+            tts_audio = {}
+            tts_audio['text'] = tts_text
+            tts_audio['human1_voice'] = "weights/Kokoro-82M/voices/am_adam.pt"
+            tts_audio['human2_voice'] = "weights/Kokoro-82M/voices/af_heart.pt"
+            input_data["tts_audio"] = tts_audio
+            
+        input_data["cond_audio"] = person
 
-    with open(args.input_json, 'r', encoding='utf-8') as f:
-        input_data = json.load(f)
-        
-        wav2vec_feature_extractor, audio_encoder= custom_init('cpu', args.wav2vec_dir)
-        args.audio_save_dir = os.path.join(args.audio_save_dir, input_data['cond_image'].split('/')[-1].split('.')[0])
-        os.makedirs(args.audio_save_dir,exist_ok=True)
-        
-        if args.audio_mode=='localfile':
+        if 'Local File' in mode_selector:
             if len(input_data['cond_audio'])==2:
                 new_human_speech1, new_human_speech2, sum_human_speechs = audio_prepare_multi(input_data['cond_audio']['person1'], input_data['cond_audio']['person2'], input_data['audio_type'])
                 audio_embedding_1 = get_embedding(new_human_speech1, wav2vec_feature_extractor, audio_encoder)
@@ -540,7 +550,7 @@ def generate(args):
                 torch.save(audio_embedding, emb_path)
                 input_data['cond_audio']['person1'] = emb_path
                 input_data['video_audio'] = sum_audio
-        elif args.audio_mode=='tts':
+        elif 'TTS' in mode_selector:
             if 'human2_voice' not in input_data['tts_audio'].keys():
                 new_human_speech1, sum_audio = process_tts_single(input_data['tts_audio']['text'], args.audio_save_dir, input_data['tts_audio']['human1_voice'])
                 audio_embedding_1 = get_embedding(new_human_speech1, wav2vec_feature_extractor, audio_encoder)
@@ -561,46 +571,47 @@ def generate(args):
                 input_data['video_audio'] = sum_audio
 
 
-    logging.info("Creating MultiTalk pipeline.")
-    wan_i2v = wan.MultiTalkPipeline(
-        config=cfg,
-        checkpoint_dir=args.ckpt_dir,
-        device_id=device,
-        rank=rank,
-        t5_fsdp=args.t5_fsdp,
-        dit_fsdp=args.dit_fsdp, 
-        use_usp=(args.ulysses_size > 1 or args.ring_size > 1),  
-        t5_cpu=args.t5_cpu,
-        lora_dir=args.lora_dir,
-        lora_scales=args.lora_scale
-    )
+        # if len(input_data['cond_audio'])==2:
+        #     new_human_speech1, new_human_speech2, sum_human_speechs = audio_prepare_multi(input_data['cond_audio']['person1'], input_data['cond_audio']['person2'], input_data['audio_type'])
+        #     audio_embedding_1 = get_embedding(new_human_speech1, wav2vec_feature_extractor, audio_encoder)
+        #     audio_embedding_2 = get_embedding(new_human_speech2, wav2vec_feature_extractor, audio_encoder)
+        #     emb1_path = os.path.join(args.audio_save_dir, '1.pt')
+        #     emb2_path = os.path.join(args.audio_save_dir, '2.pt')
+        #     sum_audio = os.path.join(args.audio_save_dir, 'sum.wav')
+        #     sf.write(sum_audio, sum_human_speechs, 16000)
+        #     torch.save(audio_embedding_1, emb1_path)
+        #     torch.save(audio_embedding_2, emb2_path)
+        #     input_data['cond_audio']['person1'] = emb1_path
+        #     input_data['cond_audio']['person2'] = emb2_path
+        #     input_data['video_audio'] = sum_audio
+        # elif len(input_data['cond_audio'])==1:
+        #     human_speech = audio_prepare_single(input_data['cond_audio']['person1'])
+        #     audio_embedding = get_embedding(human_speech, wav2vec_feature_extractor, audio_encoder)
+        #     emb_path = os.path.join(args.audio_save_dir, '1.pt')
+        #     sum_audio = os.path.join(args.audio_save_dir, 'sum.wav')
+        #     sf.write(sum_audio, human_speech, 16000)
+        #     torch.save(audio_embedding, emb_path)
+        #     input_data['cond_audio']['person1'] = emb_path
+        #     input_data['video_audio'] = sum_audio
 
-
-    if args.num_persistent_param_in_dit is not None:
-        wan_i2v.vram_management = True
-        wan_i2v.enable_vram_management(
-            num_persistent_param_in_dit=args.num_persistent_param_in_dit
-        )
-    
-    logging.info("Generating video ...")
-    video = wan_i2v.generate(
-        input_data,
-        size_buckget=args.size,
-        motion_frame=args.motion_frame,
-        frame_num=args.frame_num,
-        shift=args.sample_shift,
-        sampling_steps=args.sample_steps,
-        text_guide_scale=args.sample_text_guide_scale,
-        audio_guide_scale=args.sample_audio_guide_scale,
-        seed=args.base_seed,
-        offload_model=args.offload_model,
-        max_frames_num=args.frame_num if args.mode == 'clip' else 1000,
-        extra_args=args,
-        )
-    
-
-    if rank == 0:
+        logging.info("Generating video ...")
+        video = wan_i2v.generate(
+            input_data,
+            size_buckget=resolution_select,
+            motion_frame=args.motion_frame,
+            frame_num=args.frame_num,
+            shift=args.sample_shift,
+            sampling_steps=sd_steps,
+            text_guide_scale=text_guide_scale,
+            audio_guide_scale=audio_guide_scale,
+            seed=seed,
+            n_prompt=n_prompt,
+            offload_model=args.offload_model,
+            max_frames_num=args.frame_num if args.mode == 'clip' else 1000,
+            extra_args=args,
+            )
         
+
         if args.save_file is None:
             formatted_time = datetime.now().strftime("%Y%m%d_%H%M%S")
             formatted_prompt = input_data['prompt'].replace(" ", "_").replace("/",
@@ -609,10 +620,150 @@ def generate(args):
         
         logging.info(f"Saving generated video to {args.save_file}.mp4")
         save_video_ffmpeg(video, args.save_file, [input_data['video_audio']], high_quality_save=True)
+        logging.info("Finished.")
+
+        return args.save_file + '.mp4'
+
+    def toggle_audio_mode(mode):
+        if 'TTS' in mode:
+            return [
+                gr.Audio(visible=False, interactive=False),
+                gr.Audio(visible=False, interactive=False),
+                gr.Textbox(visible=True, interactive=True)
+            ]
+        elif 'Single' in mode:
+            return [
+                gr.Audio(visible=True, interactive=True),
+                gr.Audio(visible=False, interactive=False),
+                gr.Textbox(visible=False, interactive=False)
+            ]
+        else:
+            return [
+                gr.Audio(visible=True, interactive=True),
+                gr.Audio(visible=True, interactive=True),
+                gr.Textbox(visible=False, interactive=False)
+            ]
+            
         
-    logging.info("Finished.")
+    with gr.Blocks() as demo:
+
+        gr.Markdown("""
+                    <div style="text-align: center; font-size: 32px; font-weight: bold; margin-bottom: 20px;">
+                        MeiGen-MultiTalk
+                    </div>
+                    <div style="text-align: center; font-size: 16px; font-weight: normal; margin-bottom: 20px;">
+                        Let Them Talk: Audio-Driven Multi-Person Conversational Video Generation.
+                    </div>
+                    <div style="display: flex; justify-content: center; gap: 10px; flex-wrap: wrap;">
+                        <a href='https://meigen-ai.github.io/multi-talk/'><img src='https://img.shields.io/badge/Project-Page-blue'></a>
+                        <a href='https://huggingface.co/MeiGen-AI/MeiGen-MultiTalk'><img src='https://img.shields.io/badge/%F0%9F%A4%97%20HuggingFace-Model-yellow'></a>
+                        <a href='https://arxiv.org/abs/2505.22647'><img src='https://img.shields.io/badge/Paper-Arxiv-red'></a>
+                    </div>
+
+
+                    """)
+
+        with gr.Row():
+            with gr.Column(scale=1):
+                img2vid_image = gr.Image(
+                    type="filepath",
+                    label="Upload Input Image",
+                    elem_id="image_upload",
+                )
+                img2vid_prompt = gr.Textbox(
+                    label="Prompt",
+                    placeholder="Describe the video you want to generate",
+                )
+                
+                
+                with gr.Accordion("Audio Options", open=True):
+                    mode_selector = gr.Radio(
+                        choices=["Single Person(Local File)", "Single Person(TTS)", "Multi Person(Local File, audio add)", "Multi Person(Local File, audio parallel)", "Multi Person(TTS)"],
+                        label="Select person and audio mode.",
+                        value="Single Person(Local File)"
+                    )
+                    resolution_select = gr.Radio(
+                        choices=["multitalk-480", "multitalk-720"],
+                        label="Select resolution.",
+                        value="multitalk-480"
+                    )
+                    img2vid_audio_1 = gr.Audio(label="Conditioning Audio for speaker 1", type="filepath", visible=True)
+                    img2vid_audio_2 = gr.Audio(label="Conditioning Audio for speaker 2", type="filepath", visible=False)
+                    tts_text = gr.Textbox(
+                        label="Text for TTS",
+                        placeholder="Refer to the format in the examples",
+                        visible=False,
+                        interactive=False
+                    )
+                    mode_selector.change(
+                        fn=toggle_audio_mode,
+                        inputs=mode_selector,
+                        outputs=[img2vid_audio_1, img2vid_audio_2, tts_text]
+                    )
+
+                with gr.Accordion("Advanced Options", open=False):
+                    with gr.Row():
+                        sd_steps = gr.Slider(
+                            label="Diffusion steps",
+                            minimum=1,
+                            maximum=1000,
+                            value=8,
+                            step=1)
+                        seed = gr.Slider(
+                            label="Seed",
+                            minimum=-1,
+                            maximum=2147483647,
+                            step=1,
+                            value=42)
+                    with gr.Row():
+                        text_guide_scale = gr.Slider(
+                            label="Text Guide scale",
+                            minimum=0,
+                            maximum=20,
+                            value=1.0,
+                            step=1)
+                        audio_guide_scale = gr.Slider(
+                            label="Audio Guide scale",
+                            minimum=0,
+                            maximum=20,
+                            value=2.0,
+                            step=1)
+                    # with gr.Row():
+                    n_prompt = gr.Textbox(
+                        label="Negative Prompt",
+                        placeholder="Describe the negative prompt you want to add",
+                        value="bright tones, overexposed, static, blurred details, subtitles, style, works, paintings, images, static, overall gray, worst quality, low quality, JPEG compression residue, ugly, incomplete, extra fingers, poorly drawn hands, poorly drawn faces, deformed, disfigured, misshapen limbs, fused fingers, still picture, messy background, three legs, many people in the background, walking backwards"
+                    )
+
+                run_i2v_button = gr.Button("Generate Video")
+
+            with gr.Column(scale=2):
+                result_gallery = gr.Video(
+                    label='Generated Video', interactive=False, height=600, )
+                
+                gr.Examples(
+                    examples = [
+                        ["examples/single/single1.png", "A woman is passionately singing into a professional microphone in a recording studio. She wears large black headphones and a dark cardigan over a gray top. Her long, wavy brown hair frames her face as she looks slightly upwards, her mouth open mid-song. The studio is equipped with various audio equipment, including a mixing console and a keyboard, with soundproofing panels on the walls. The lighting is warm and focused on her, creating a professional and intimate atmosphere. A close-up shot captures her expressive performance.", "Single Person(Local File)", "examples/single/1.wav", None, None],
+                        ["examples/single/single1.png", "A woman is passionately singing into a professional microphone in a recording studio. She wears large black headphones and a dark cardigan over a gray top. Her long, wavy brown hair frames her face as she looks slightly upwards, her mouth open mid-song. The studio is equipped with various audio equipment, including a mixing console and a keyboard, with soundproofing panels on the walls. The lighting is warm and focused on her, creating a professional and intimate atmosphere. A close-up shot captures her expressive performance.", "Single Person(TTS)", None, None, "Welcome to multi-talk, this is an audio-driven video generation model for multiple person."],
+                        ["examples/multi/1/multi1.png", "In a casual, intimate setting, a man and a woman are engaged in a heartfelt conversation inside a car. The man, sporting a denim jacket over a blue shirt, sits attentively with a seatbelt fastened, his gaze fixed on the woman beside him. The woman, wearing a black tank top and a denim jacket draped over her shoulders, smiles warmly, her eyes reflecting genuine interest and connection. The car's interior, with its beige seats and simple design, provides a backdrop that emphasizes their interaction. The scene captures a moment of shared understanding and connection, set against the soft, diffused light of an overcast day. A medium shot from a slightly angled perspective, focusing on their expressions and body language.", "Multi Person(Local File, audio add)", "examples/multi/1/1.WAV", "examples/multi/1/2.WAV", None],
+                        ["examples/multi/3/multi3.png", "In a cozy recording studio, a man and a woman are singing together. The man, with tousled brown hair, stands to the left, wearing a light green button-down shirt. His gaze is directed towards the woman, who is smiling warmly. She, with wavy dark hair, is dressed in a black floral dress and stands to the right, her eyes closed in enjoyment. Between them is a professional microphone, capturing their harmonious voices. The background features wooden panels and various audio equipment, creating an intimate and focused atmosphere. The lighting is soft and warm, highlighting their expressions and the intimate setting. A medium shot captures their interaction closely.", "Multi Person(Local File, audio parallel)", "examples/multi/3/1-man.WAV", "examples/multi/3/1-woman.WAV", None],
+                        ["examples/multi/1/multi1.png", "In a casual, intimate setting, a man and a woman are engaged in a heartfelt conversation inside a car. The man, sporting a denim jacket over a blue shirt, sits attentively with a seatbelt fastened, his gaze fixed on the woman beside him. The woman, wearing a black tank top and a denim jacket draped over her shoulders, smiles warmly, her eyes reflecting genuine interest and connection. The car's interior, with its beige seats and simple design, provides a backdrop that emphasizes their interaction. The scene captures a moment of shared understanding and connection, set against the soft, diffused light of an overcast day. A medium shot from a slightly angled perspective, focusing on their expressions and body language.", "Multi Person(TTS)", None, None, "(s1) do you know multi-talk? (s2) yes, I know it, that's amazing! (s1) Me too."],
+                    ],
+                    inputs = [img2vid_image, img2vid_prompt, mode_selector, img2vid_audio_1, img2vid_audio_2, tts_text],
+                )
+
+
+        run_i2v_button.click(
+            fn=generate_video,
+            inputs=[img2vid_image, img2vid_prompt, n_prompt, img2vid_audio_1, img2vid_audio_2,sd_steps, seed, text_guide_scale, audio_guide_scale, mode_selector, tts_text, resolution_select],
+            outputs=[result_gallery],
+        )
+    demo.launch(server_name="0.0.0.0", debug=True, server_port=8418)
+
+        
 
 
 if __name__ == "__main__":
     args = _parse_args()
-    generate(args)
+    run_graio_demo(args)
+    
