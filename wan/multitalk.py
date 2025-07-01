@@ -515,9 +515,8 @@ class MultiTalkPipeline:
                     background_mask = torch.zeros([src_h, src_w])
                     human_mask1 = torch.zeros([src_h, src_w])
                     human_mask2 = torch.zeros([src_h, src_w])
-                    src_w = src_w//2
-                    lefty_min, lefty_max = int(src_w * face_scale), int(src_w * (1 - face_scale))
-                    righty_min, righty_max = int(src_w * face_scale + src_w), int(src_w * (1 - face_scale) + src_w)
+                    lefty_min, lefty_max = int((src_w//2) * face_scale), int((src_w//2) * (1 - face_scale))
+                    righty_min, righty_max = int((src_w//2) * face_scale + (src_w//2)), int((src_w//2) * (1 - face_scale) + (src_w//2))
                     human_mask1[x_min:x_max, lefty_min:lefty_max] = 1
                     human_mask2[x_min:x_max, righty_min:righty_max] = 1
                     background_mask += human_mask1
