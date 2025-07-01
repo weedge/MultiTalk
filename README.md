@@ -368,13 +368,14 @@ python generate_multitalk.py \
 python app.py \
     --lora_dir weights/Wan2.1_I2V_14B_FusionX_LoRA.safetensors \
     --lora_scale 1.0 \
+    --num_persistent_param_in_dit 0 \
     --sample_shift 2
 ```
 
 or
 
 ```
-python app.py
+python app.py --num_persistent_param_in_dit 0 
 ```
 
 
