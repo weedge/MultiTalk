@@ -197,6 +197,8 @@ Our model is compatible with both 480P and 720P resolutions. The current code on
 --size multitalk-720: generate 720P video.
 --use_apg: run with APG.
 --teacache_thresh: A coefficient used for TeaCache acceleration
+—-sample_text_guide_scale： When not using LoRA, the optimal value is `5`. After applying LoRA, the recommended value is `1`.
+—-sample_audio_guide_scale： When not using LoRA, the optimal value is `4`. After applying LoRA, the recommended value is `2`.
 ```
 
 #### 1. Single-Person
